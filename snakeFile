@@ -1,0 +1,94 @@
+# A snakeFile alternative that uses MiniMap2 alignments
+
+configfile : "default.json"
+
+rule all:
+    input: expand("phaploid/{genome}.pseudohaploid.fa", genome=config["genome"])
+    
+rule print_config:
+    input:
+        min_identity: config["min_identity"],
+        min_length: config["min_length"],
+        min_contain: config["min_contain"],
+        max_chain_gap: config["max_chain_gap"],
+        genome: config["genome"],
+        prefix: config["prefix"]
+    output:
+        touch("{prefix}_printed.txt")
+    run:
+        print("Generating Pseudohaploid genome sequence with SnakeMake!"
+        print("(yay?)")
+        print("--------------------------------------------------------")
+        print(f'Genome 		= {input.genome}')
+        print(f'OutPrefix 	= {input.prefix}')
+        print(f'MinIdentity	= {input.min_identity}')
+        print(f'MinLength	= {input.min_length}')
+        print(f'MinContain	= {input.min_contain}')
+        print(f'MaxChainGap	= {input.max_chain_gap}')
+        
+rule align_genome:
+    input:
+        "{sample}_printed.txt",
+        "{genome}",
+        config["prefix"]
+    params:
+        mpreset: "-x asm10"
+    output:
+        "alignments/{prefix}.minimap.paf"
+    shell:
+        """
+        minimap2 {params.mpreset} {input[1]} {input[1]} > {output}
+        """
+        
+rule filter_convert:
+    input:
+        "alignments/{prefix}.minimap.paf",
+    output:
+        "alignments/{prefix}.filtered.coords"
+    script:
+        "scripts/convertPafToCoords.py"
+        
+rule identify_chains:
+    input:
+        "alignments/{prefix}.filtered.coords"
+    params:
+        bin_dir: config["bin_dir"],
+        min_identity: config["min_identity"],
+	min_length: config["min_length"],
+	min_contain: config["min_contain"],
+        max_chain_gap: config["max_chain_gap"]
+    output:
+        "phaploid/{prefix}.chains"
+    shell:
+        "perl {bin_dir}/pseudohaploid.chains.pl {input} {params.min_identity} {params.min_contain} {params.max_chain_gap} > {output}"
+
+rule list_contained:
+    input:
+        "phaploid/{prefix}.chains"
+    params:
+        min_contain: config["min_contain"]
+    output:
+        "phaploid/{prefix}.contained.list"
+    run:
+        numcontained = 0
+        with open(input[0], 'r') as j, open(output[0], 'w') as o:
+            for l in j:
+                l = l.rstrip()
+                if l.startswith('#'):
+                    next
+                s = l.split()
+                if int(s[3]) >= params["min_contain"]:
+                    o.write(s[1] + "\n")
+                    numcontained += 1
+        print(f'Identified {numcontained} redundant contigs to remove.')
+        
+rule remove_contained:
+    input:
+        "phaploid/{prefix}.contained.list",
+        config["genome"]
+    params:
+        bin_dir: config["bin_dir"]
+    output:
+        "phaploid/{genome}.pseudohaploid.fa"
+    shell:
+        "{params.bin_dir}/filter_seq -v {input[0]} {input[1]}> {output}"
