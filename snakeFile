@@ -3,40 +3,41 @@
 configfile : "default.json"
 
 rule all:
-    input: expand("phaploid/{genome}.pseudohaploid.fa", genome=config["genome"])
+    input: expand("phaploid/{prefix}.pseudohaploid.fa", prefix=config["prefix"])
     
 rule print_config:
     input:
-        min_identity: config["min_identity"],
-        min_length: config["min_length"],
-        min_contain: config["min_contain"],
-        max_chain_gap: config["max_chain_gap"],
-        genome: config["genome"],
-        prefix: config["prefix"]
+        genome = config["genome"],
+    params:
+        min_identity = config["min_identity"],
+        min_length = config["min_length"],
+        min_contain = config["min_contain"],
+        max_chain_gap = config["max_chain_gap"],
+        prefix = config["prefix"]
     output:
         touch("{prefix}_printed.txt")
     run:
-        print("Generating Pseudohaploid genome sequence with SnakeMake!"
+        print("Generating Pseudohaploid genome sequence with SnakeMake!")
         print("(yay?)")
         print("--------------------------------------------------------")
         print(f'Genome 		= {input.genome}')
-        print(f'OutPrefix 	= {input.prefix}')
-        print(f'MinIdentity	= {input.min_identity}')
-        print(f'MinLength	= {input.min_length}')
-        print(f'MinContain	= {input.min_contain}')
-        print(f'MaxChainGap	= {input.max_chain_gap}')
+        print(f'OutPrefix 	= {params.prefix}')
+        print(f'MinIdentity	= {params.min_identity}')
+        print(f'MinLength	= {params.min_length}')
+        print(f'MinContain	= {params.min_contain}')
+        print(f'MaxChainGap	= {params.max_chain_gap}')
         
 rule align_genome:
     input:
-        "{prefix}_printed.txt",
-        "{genome}"
+        done = "{prefix}_printed.txt",
+        genome = config["genome"]
     params:
-        mpreset: "-x asm10"
+        mpreset = "-x asm10"
     output:
         "alignments/{prefix}.minimap.paf"
     shell:
         """
-        minimap2 {params.mpreset} {input[1]} {input[1]} > {output}
+        minimap2 {params.mpreset} {input.genome} {input.genome} > {output}
         """
         
 rule filter_convert:
@@ -51,21 +52,21 @@ rule identify_chains:
     input:
         "alignments/{prefix}.filtered.coords"
     params:
-        bin_dir: config["bin_dir"],
-        min_identity: config["min_identity"],
-	min_length: config["min_length"],
-	min_contain: config["min_contain"],
-        max_chain_gap: config["max_chain_gap"]
+        bin_dir = config["bin_dir"],
+        min_identity = config["min_identity"],
+	min_length = config["min_length"],
+	min_contain = config["min_contain"],
+        max_chain_gap = config["max_chain_gap"]
     output:
         "phaploid/{prefix}.chains"
     shell:
-        "perl {bin_dir}/pseudohaploid.chains.pl {input} {params.min_identity} {params.min_contain} {params.max_chain_gap} > {output}"
+        "perl {params.bin_dir}/pseudohaploid.chains.pl {input} {params.min_identity} {params.min_contain} {params.max_chain_gap} > {output}"
 
 rule list_contained:
     input:
         "phaploid/{prefix}.chains"
     params:
-        min_contain: config["min_contain"]
+        min_contain = config["min_contain"]
     output:
         "phaploid/{prefix}.contained.list"
     run:
@@ -83,11 +84,11 @@ rule list_contained:
         
 rule remove_contained:
     input:
-        "phaploid/{prefix}.contained.list",
-        config["genome"]
+        list = "phaploid/{prefix}.contained.list",
+        genome = config["genome"]
     params:
-        bin_dir: config["bin_dir"]
+        bin_dir = config["bin_dir"]
     output:
-        "phaploid/{genome}.pseudohaploid.fa"
+        "phaploid/{prefix}.pseudohaploid.fa"
     shell:
-        "{params.bin_dir}/filter_seq -v {input[0]} {input[1]}> {output}"
+        "{params.bin_dir}/filter_seq -v {input.list} {input.genome}> {output}"

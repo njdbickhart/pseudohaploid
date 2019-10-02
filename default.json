@@ -1,4 +1,5 @@
 {
+  "bin_dir" : "/path/to/bin",
   "min_identity" : "90",
   "min_length" : "1000",
   "min_contain" : "93",
@@ -6,3 +7,4 @@
   "genome" : "/path/to/genome/fasta",
   "prefix" : "outputprefixname"
 }
+
