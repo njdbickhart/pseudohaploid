@@ -28,9 +28,8 @@ rule print_config:
         
 rule align_genome:
     input:
-        "{sample}_printed.txt",
-        "{genome}",
-        config["prefix"]
+        "{prefix}_printed.txt",
+        "{genome}"
     params:
         mpreset: "-x asm10"
     output:

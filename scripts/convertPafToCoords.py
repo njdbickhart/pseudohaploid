@@ -15,8 +15,8 @@ def process_paf(paf : str, outfile : str) -> int:
             l = l.rstrip()
             s = l.split()
             
-            pid = float(s[9]) / float(s[10])
-            if pid < 0.90 or int(s[10]) < 1000:
+            pid = (float(s[9]) / float(s[10])) * 100
+            if pid < 90 or int(s[10]) < 1000:
                 filtered += 1
                 next
             
@@ -29,9 +29,8 @@ def process_paf(paf : str, outfile : str) -> int:
                 s[3] = s[2]
                 s[2] = t
             
-            block = ["", s[7], s[8], "", s[2], "", s[3], "",  alenr,
-                     alenq, pid, "", s[6], s[1], "", "", "",
-                     "", s[5], s[0]]
+            block = [s[7], s[8], s[2], s[3], alenr,
+                     alenq, pid, s[6], s[1], s[5], s[0]]
             
             out.write("\t".join(block) + "\n")
     

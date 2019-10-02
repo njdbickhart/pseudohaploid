@@ -33,25 +33,25 @@ while (<COORDS>)
   chomp;
   my @vals = split /\s+/, $_;
 
-  my $rstart = $vals[1];
-  my $rend   = $vals[2];
+  my $rstart = $vals[0];
+  my $rend   = $vals[1];
 
-  my $qstart = $vals[4];
-  my $qend   = $vals[5];
+  my $qstart = $vals[2];
+  my $qend   = $vals[3];
 
   my $qoo    = "F";
   if ($qstart > $qend) { $qoo = "R" };
 
-  my $alenr = $vals[7];
-  my $alenq = $vals[8];
+  my $alenr = $vals[4];
+  my $alenq = $vals[5];
 
-  my $pid  = $vals[10];
+  my $pid  = $vals[6];
 
-  my $lenr = $vals[12];
-  my $lenq = $vals[13];
+  my $lenr = $vals[7];
+  my $lenq = $vals[8];
 
-  my $rid  = $vals[18];
-  my $qid  = $vals[19];
+  my $rid  = $vals[9];
+  my $qid  = $vals[10];
 
   $contigs{$rid}->{len} = $lenr;
   $contigs{$qid}->{len} = $lenq;
